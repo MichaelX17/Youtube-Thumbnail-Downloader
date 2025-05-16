@@ -1,0 +1,15 @@
+# Ignore by default
+*
+
+# Exceptions (Files/Folders to upload)
+!/.gitignore
+!/README.md
+!/youtube_thumbnails.py
+!/youtube_thumbnails.spec
+!/yt_thumb.ico
+!/assets/
+!/assets/**
+
+# Especifically ignore these folders in assets
+assets/**/*.tmp
+assets/**/*.temp
