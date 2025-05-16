@@ -1,7 +1,6 @@
 # Youtube Thumbnail Downloader
 
-| ![image](https://github.com/user-attachments/assets/4a9a9f78-dc1e-4260-933d-b416130b5385) | ![image](https://github.com/user-attachments/assets/9e09fa80-86d8-4893-987e-3f12eb5149f7)
- |
+| ![image](https://github.com/user-attachments/assets/4a9a9f78-dc1e-4260-933d-b416130b5385) | ![image](https://github.com/user-attachments/assets/9e09fa80-86d8-4893-987e-3f12eb5149f7) |
 |:--:|:--:|
 
 
