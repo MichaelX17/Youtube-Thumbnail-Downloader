@@ -19,6 +19,7 @@
   - `pywin32-221.win32-py3.4.exe`
   - `pefile-2017.11.5.tar.gz`
   - `PyInstaller-3.2.tar.gz`
+  - `upx-5.0.0-win32.zip / upx-5.0.0-win64.zip`
   - `vcredist_x86.exe ` ( Visual Studio 2010 (VC++ 10.0) SP1 )
 
 ---
