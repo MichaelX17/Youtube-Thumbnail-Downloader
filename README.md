@@ -1,7 +1,10 @@
 # Youtube Thumbnail Downloader
 
-| ![image1](https://github.com/user-attachments/assets/9fdfe5be-558d-4800-89d1-c8256a0414c0) | ![image2](https://github.com/user-attachments/assets/87996aa9-445d-44bf-8f3b-16631d14ce90) |
+| ![image](https://github.com/user-attachments/assets/4a9a9f78-dc1e-4260-933d-b416130b5385) | ![image](https://github.com/user-attachments/assets/9e09fa80-86d8-4893-987e-3f12eb5149f7)
+ |
 |:--:|:--:|
+
+
 
 
 *A lightweight utility to download YT Thumbnails on Windows systems (x86/x64).*
