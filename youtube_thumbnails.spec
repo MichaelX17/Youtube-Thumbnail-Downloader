@@ -8,7 +8,11 @@ script_dir = os.getcwd()
 a = Analysis(['youtube_thumbnails.py'],
              pathex=[script_dir],
              binaries=None,
-             datas=[('yt_thumb.ico', '.')],
+             datas=[
+                 ('yt_thumb.ico', '.'),
+                 ('not_found.png', '.'),
+                 ('folder.png', '.')
+             ],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
