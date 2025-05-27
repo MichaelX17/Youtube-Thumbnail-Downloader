@@ -7,6 +7,8 @@ import re
 import sys
 import os
 import webbrowser
+import socket
+import urllib.error
 
 # Style Consts
 DARK_BG = "#1e1e1e"
@@ -24,7 +26,7 @@ class YouTubeThumbnailApp(tk.Tk):
         self.configure(bg=DARK_BG)
         self.resizable(False, False)
         
-        # Configuración del ícono
+        # Icon config
         try:
             if getattr(sys, 'frozen', False):
                 icon_path = os.path.join(sys._MEIPASS, 'yt_thumb.ico')
@@ -39,7 +41,7 @@ class YouTubeThumbnailApp(tk.Tk):
             # Cargar imágenes
             self.not_found_img = Image.open(not_found_path)
             self.folder_img = Image.open(folder_path).resize((40, 40))
-            self.folder_photo = ImageTk.PhotoImage(self.folder_img)  # ¡Esta línea es crucial!
+            self.folder_photo = ImageTk.PhotoImage(self.folder_img)
         except Exception as e:
             print("Error loading images: {}".format(str(e)))
 
@@ -54,22 +56,28 @@ class YouTubeThumbnailApp(tk.Tk):
         style = ttk.Style(self)
         self.configure_style(style)
 
-        # Frame contenedor principal
         self.main_container = tk.Frame(self, bg=DARK_BG)
         self.main_container.pack(fill="both", expand=True)
 
-        # Frames de las páginas
         self.frames = {}
         for F in (StartPage, ThumbnailPage):
             frame = F(self.main_container, self)
             self.frames[F] = frame
             frame.place(x=0, y=0, relwidth=1, relheight=1)
 
-        # Crear el botón de carpeta en ambas páginas
         self.create_folder_button(StartPage)
         self.create_folder_button(ThumbnailPage)
 
         self.show_frame(StartPage)
+
+    def check_internet_connection(self, timeout=3):
+        """Verifica si hay conexión a internet"""
+        try:
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(("8.8.8.8", 53))
+            return True
+        except Exception:
+            return False
 
     def create_folder_button(self, page_class):
         frame = self.frames[page_class]
@@ -78,7 +86,7 @@ class YouTubeThumbnailApp(tk.Tk):
         
         folder_btn = tk.Label(
             folder_frame, 
-            image=self.folder_photo,  # Usa la misma instancia
+            image=self.folder_photo,
             bg=DARK_BG,
             cursor="hand2"
         )
@@ -133,7 +141,7 @@ class StartPage(tk.Frame):
             insertbackground=TEXT_COLOR
         )
         self.url_entry.pack(padx=3, pady=3, ipady=6)
-        self.url_entry.bind("<Return>", lambda event: self.on_search())  # Enter key binding
+        self.url_entry.bind("<Return>", lambda event: self.on_search())
 
         self.menu = tk.Menu(self, tearoff=0, bg=CARD_BG, fg=TEXT_COLOR)
         self.menu.add_command(label="Paste", command=lambda: self.url_entry.event_generate("<<Paste>>"))
@@ -167,6 +175,10 @@ class StartPage(tk.Frame):
         url = self.url_entry.get().strip()
         if not url:
             messagebox.showwarning("Empty Field", "Please enter a valid URL.")
+            return
+
+        if not self.controller.check_internet_connection():
+            messagebox.showerror("No Internet", "No internet connection detected. Please check your network and try again.")
             return
 
         video_id = self.extract_video_id(url)
@@ -210,7 +222,6 @@ class ThumbnailPage(tk.Frame):
         self.bottom_frame = tk.Frame(self, bg=DARK_BG)
         self.bottom_frame.pack(side="bottom", fill="x", pady=10)
         
-        # Frame centrado para el botón de descarga
         center_frame = tk.Frame(self.bottom_frame, bg=DARK_BG)
         center_frame.pack(expand=True, fill="x")
         
@@ -222,16 +233,6 @@ class ThumbnailPage(tk.Frame):
             state="normal"
         )
         self.download_button.pack(pady=5)
-        
-        # Botón de carpeta (flotante a la derecha)
-        self.folder_btn = tk.Label(
-            self.bottom_frame, 
-            image=self.controller.folder_photo,
-            bg=DARK_BG,
-            cursor="hand2"
-        )
-        self.folder_btn.place(relx=1.0, rely=1.0, anchor="se", x=-10, y=-10)
-        self.folder_btn.bind("<Button-1>", self.open_thumb_folder)
 
     def open_thumb_folder(self, event):
         if getattr(sys, 'frozen', False):
@@ -275,7 +276,8 @@ class ThumbnailPage(tk.Frame):
         for index, quality in enumerate(qualities):
             url = "https://img.youtube.com/vi/{0}/{1}.jpg".format(video_id, quality)
             try:
-                with urllib.request.urlopen(url) as u:
+                # Añade timeout a la solicitud
+                with urllib.request.urlopen(url, timeout=10) as u:
                     raw_data = u.read()
                 im = Image.open(io.BytesIO(raw_data)).convert("RGB")
                 im = im.resize(thumbnail_size)
@@ -284,7 +286,7 @@ class ThumbnailPage(tk.Frame):
                 photo = ImageTk.PhotoImage(im)
 
                 resolution = self.resolutions[quality]
-                self.thumbnails.append((url, photo, resolution, True))  # Added flag for selectable
+                self.thumbnails.append((url, photo, resolution, True))
 
                 main_frame = tk.Frame(self.grid_frame, bg=DARK_BG)
                 main_frame.grid(row=index // 3, column=index % 3, padx=10, pady=10, sticky="nsew")
@@ -303,8 +305,10 @@ class ThumbnailPage(tk.Frame):
 
                 lbl.bind("<Button-1>", lambda e, idx=index, sf=selection_frame: self.on_select(idx, sf))
 
+            except urllib.error.URLError as e:
+                messagebox.showerror("Connection Error", "Could not connect to YouTube servers. Please check your internet connection.")
+                return
             except urllib.error.HTTPError as e:
-                # Thumbnail not available, use not_found image
                 not_found_img = self.controller.not_found_img.copy()
                 not_found_img = not_found_img.resize(thumbnail_size)
                 not_found_img = ImageOps.expand(not_found_img, border=border_size, fill=DARK_BG)
@@ -312,7 +316,7 @@ class ThumbnailPage(tk.Frame):
                 photo = ImageTk.PhotoImage(not_found_img)
                 
                 resolution = self.resolutions[quality]
-                self.thumbnails.append((None, photo, resolution, False))  # Not selectable
+                self.thumbnails.append((None, photo, resolution, False))
 
                 main_frame = tk.Frame(self.grid_frame, bg=DARK_BG)
                 main_frame.grid(row=index // 3, column=index % 3, padx=10, pady=10, sticky="nsew")
@@ -326,9 +330,10 @@ class ThumbnailPage(tk.Frame):
                 
             except Exception as e:
                 print("Error loading Image: {}".format(str(e)))
+                messagebox.showerror("Error", "An unexpected error occurred: {}".format(str(e)))
+                return
 
     def on_select(self, index, selection_frame):
-        # Check if this thumbnail is selectable
         if not self.thumbnails[index][3]:
             return
             
@@ -344,7 +349,10 @@ class ThumbnailPage(tk.Frame):
         )
 
     def download_thumbnails(self):
-        # Base Path
+        if not self.controller.check_internet_connection():
+            messagebox.showerror("No Internet", "No internet connection detected. Please check your network and try again.")
+            return
+
         if getattr(sys, 'frozen', False):
             base_dir = os.path.dirname(sys.executable)
         else:
@@ -357,7 +365,6 @@ class ThumbnailPage(tk.Frame):
             messagebox.showerror("Error", "Could not create directory: {}".format(e))
             return
 
-        # Filter out non-selectable thumbnails and those not available
         indices = [idx for idx in (self.selected_indices if self.selected_indices else range(len(self.thumbnails)))]
         indices = [idx for idx in indices if self.thumbnails[idx][0] is not None and self.thumbnails[idx][3]]
 
